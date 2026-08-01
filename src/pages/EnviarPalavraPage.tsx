@@ -238,7 +238,7 @@ export const EnviarPalavraPage: React.FC = () => {
                   setVerse(e.target.value);
                   if (errors.verse) setErrors({ ...errors, verse: undefined });
                 }}
-                placeholder="Ex: 1-6 ou 16"
+                placeholder="Ex: 1 - 6  ou 16"
                 className={`w-full px-4 py-3.5 rounded-xl bg-slate-950 border text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all ${
                   errors.verse ? 'border-rose-500/80' : 'border-slate-800'
                 }`}
