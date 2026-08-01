@@ -58,7 +58,7 @@ export const EnviarHinoPage: React.FC = () => {
       setTimeout(() => {
         setSuccess(false);
       }, 5000);
-    } } catch (err: any) {
+    } catch (err: any) {
           console.error("ERRO COMPLETO:", err);
 
           addToast({

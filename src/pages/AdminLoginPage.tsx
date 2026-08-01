@@ -129,13 +129,10 @@ export const AdminLoginPage: React.FC = () => {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-slate-800 text-center space-y-2">
+        <div className="mt-8 pt-6 border-t border-slate-800 text-center">
           <p className="text-[11px] text-slate-400 flex items-center justify-center gap-1">
             <img src="/logo/cfec.png" alt="Logo CFEC" className="w-3.5 h-3.5 object-contain" />
             Acesso restrito à equipe técnica e de louvor da igreja.
-          </p>
-          <p className="text-[10px] text-slate-500">
-            Dica temporária: <code className="bg-slate-950 px-1.5 py-0.5 rounded text-amber-300 font-mono">cfec@2026</code>
           </p>
         </div>
       </motion.div>
