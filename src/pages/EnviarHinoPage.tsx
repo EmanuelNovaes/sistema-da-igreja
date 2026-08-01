@@ -140,7 +140,7 @@ export const EnviarHinoPage: React.FC = () => {
                 setPersonName(e.target.value);
                 if (errors.personName) setErrors({ ...errors, personName: undefined });
               }}
-              placeholder="Ex: Irmã Maria Silva / Grupo de Jovens"
+              placeholder="Ex: Emanuel"
               className={`w-full px-4 py-3.5 rounded-xl bg-slate-950 border text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all ${
                 errors.personName ? 'border-rose-500/80' : 'border-slate-800'
               }`}
@@ -163,7 +163,7 @@ export const EnviarHinoPage: React.FC = () => {
                 setSongName(e.target.value);
                 if (errors.songName) setErrors({ ...errors, songName: undefined });
               }}
-              placeholder="Ex: Porque Ele Vive / Grandes Coisas Fez o Senhor"
+              placeholder="Ex: Galileu"
               className={`w-full px-4 py-3.5 rounded-xl bg-slate-950 border text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all ${
                 errors.songName ? 'border-rose-500/80' : 'border-slate-800'
               }`}
