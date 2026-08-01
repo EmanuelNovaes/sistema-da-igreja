@@ -60,25 +60,28 @@ function mapWordRow(row: WordRow): Word {
  * Registra um novo hino cantado durante o culto.
  */
 export async function submitSong(data: SongInput): Promise<Song> {
-  const { data: row, error } = await supabase
+  const response = await supabase
     .from('songs')
     .insert({
       person_name: data.personName.trim(),
       song_name: data.songName.trim(),
       date: getCurrentDateBR(),
-      time: new Date().toTimeString().slice(0, 5)
+      time: new Date().toTimeString().slice(0, 5),
     })
     .select()
     .single();
 
-  console.log("ROW:", row);
-  console.log("ERROR:", error);
+  console.log("SUPABASE RESPONSE:", response);
 
-  if (error || !row) {
-    throw new Error(error?.message ?? 'Erro ao salvar o hino.');
+  if (response.error) {
+    throw new Error(response.error.message);
   }
 
-  return mapSongRow(row as SongRow);
+  if (!response.data) {
+    throw new Error("O Supabase não retornou dados.");
+  }
+
+  return mapSongRow(response.data as SongRow);
 }
 
 /**

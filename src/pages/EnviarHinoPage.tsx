@@ -58,15 +58,15 @@ export const EnviarHinoPage: React.FC = () => {
       setTimeout(() => {
         setSuccess(false);
       }, 5000);
-    } catch (err: any) {
-        console.error(err);
+    } } catch (err: any) {
+          console.error("ERRO COMPLETO:", err);
 
-        addToast({
-          type: 'error',
-          title: 'Erro ao Enviar',
-          description: err.message,
-        });
-      } finally {
+          addToast({
+            type: 'error',
+            title: 'Erro ao Enviar',
+            description: err?.message || 'Erro desconhecido',
+          });
+        }  finally {
       setLoading(false);
     }
   };
