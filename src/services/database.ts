@@ -71,6 +71,9 @@ export async function submitSong(data: SongInput): Promise<Song> {
     .select()
     .single();
 
+  console.log("ROW:", row);
+  console.log("ERROR:", error);
+
   if (error || !row) {
     throw new Error(error?.message ?? 'Erro ao salvar o hino.');
   }
