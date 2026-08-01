@@ -11,6 +11,10 @@ if (!isSupabaseConfigured) {
   );
 }
 
+console.log('URL:', import.meta.env.VITE_SUPABASE_URL);
+console.log('KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY);
+console.log('ENV:', import.meta.env);
+
 const safeUrl = isSupabaseConfigured ? (supabaseUrl as string) : 'https://placeholder.supabase.co';
 const safeKey = isSupabaseConfigured ? (supabaseAnonKey as string) : 'placeholder-key';
 
