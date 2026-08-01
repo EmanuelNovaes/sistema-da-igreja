@@ -58,13 +58,15 @@ export const EnviarHinoPage: React.FC = () => {
       setTimeout(() => {
         setSuccess(false);
       }, 5000);
-    } catch (err) {
-      addToast({
-        type: 'error',
-        title: 'Erro ao Enviar',
-        description: 'Não foi possível registrar o hino. Tente novamente.',
-      });
-    } finally {
+    } catch (err: any) {
+        console.error(err);
+
+        addToast({
+          type: 'error',
+          title: 'Erro ao Enviar',
+          description: err.message,
+        });
+      } finally {
       setLoading(false);
     }
   };
