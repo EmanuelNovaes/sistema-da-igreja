@@ -6,7 +6,6 @@ import { deleteWord, editWord, loadWordsToday, submitWord } from '../services/da
 import { Word } from '../types';
 import { formatDateBR, getCurrentDateBR } from '../utils/dateUtils';
 import { ToastMessage } from '../components/common/Toast';
-import { BIBLE_BOOKS } from '../utils/bibleBooks';
 
 interface OutletContextType {
   addToast: (toast: Omit<ToastMessage, 'id'>) => void;
@@ -56,33 +55,34 @@ export const PalavraPage: React.FC = () => {
   }, []);
 
   // Filter words by search term
-  const filteredWords = words.filter(
-    (w) =>
-      w.book.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      String(w.chapter).includes(searchTerm) ||
-      w.verse.includes(searchTerm) ||
-      w.date.includes(searchTerm)
-  );
+  const filteredWords = words.filter((w) => {
+    const term = searchTerm.toLowerCase();
+    const bookMatch = w.book ? w.book.toLowerCase().includes(term) : false;
+    const chapterMatch = w.chapter !== null && w.chapter !== undefined ? String(w.chapter).includes(term) : false;
+    const verseMatch = w.verse ? w.verse.toLowerCase().includes(term) : false;
+    const dateMatch = w.date ? w.date.includes(term) : false;
+    return bookMatch || chapterMatch || verseMatch || dateMatch;
+  });
 
   // Edit Handlers
   const handleOpenEdit = (word: Word) => {
     setEditingWord(word);
-    setEditBook(word.book);
-    setEditChapter(String(word.chapter));
-    setEditVerse(word.verse);
+    setEditBook(word.book || '');
+    setEditChapter(word.chapter !== null && word.chapter !== undefined ? String(word.chapter) : '');
+    setEditVerse(word.verse || '');
     setIsEditModalOpen(true);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingWord || !editBook.trim() || !editChapter || !editVerse.trim()) return;
+    if (!editingWord) return;
 
     try {
       // Executa a função editWord() conectada ao serviço do Supabase
       await editWord(editingWord.id, {
-        book: editBook.trim(),
-        chapter: Number(editChapter),
-        verse: editVerse.trim(),
+        book: editBook.trim() || undefined,
+        chapter: editChapter ? Number(editChapter) : undefined,
+        verse: editVerse.trim() || undefined,
       });
 
       addToast({
@@ -137,13 +137,12 @@ export const PalavraPage: React.FC = () => {
   // Quick Add Handler
   const handleAddWord = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newBook.trim() || !newChapter || !newVerse.trim()) return;
 
     try {
       await submitWord({
-        book: newBook.trim(),
-        chapter: Number(newChapter),
-        verse: newVerse.trim(),
+        book: newBook.trim() || undefined,
+        chapter: newChapter ? Number(newChapter) : undefined,
+        verse: newVerse.trim() || undefined,
       });
 
       addToast({
@@ -197,7 +196,7 @@ export const PalavraPage: React.FC = () => {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Pesquisar por livro, capítulo ou versículo do culto de hoje..."
+          placeholder="Pesquisar por livro, capítulo ou versículo de hoje..."
           className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all"
         />
         <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -257,13 +256,21 @@ export const PalavraPage: React.FC = () => {
                   >
                     <td className="py-4 px-6 font-bold text-[#d4af37] flex items-center gap-2">
                       <BookOpen className="w-4 h-4 text-[#d4af37] shrink-0" />
-                      <span>{word.book}</span>
+                      <span>{word.book || <span className="text-slate-500 font-normal italic">—</span>}</span>
                     </td>
                     <td className="py-4 px-6 font-semibold text-slate-100">
-                      Cap. {word.chapter}
+                      {word.chapter !== null && word.chapter !== undefined ? (
+                        `Cap. ${word.chapter}`
+                      ) : (
+                        <span className="text-slate-500 font-normal italic">—</span>
+                      )}
                     </td>
                     <td className="py-4 px-6 font-semibold text-slate-200">
-                      Vers. {word.verse}
+                      {word.verse ? (
+                        `Vers. ${word.verse}`
+                      ) : (
+                        <span className="text-slate-500 font-normal italic">—</span>
+                      )}
                     </td>
                     <td className="py-4 px-6 font-mono text-slate-400 text-xs">
                       {formatDateBR(word.date)}
@@ -330,8 +337,8 @@ export const PalavraPage: React.FC = () => {
                     type="text"
                     value={editBook}
                     onChange={(e) => setEditBook(e.target.value)}
+                    placeholder="Ex: Salmos"
                     className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
-                    required
                   />
                 </div>
 
@@ -345,8 +352,8 @@ export const PalavraPage: React.FC = () => {
                       min="1"
                       value={editChapter}
                       onChange={(e) => setEditChapter(e.target.value)}
+                      placeholder="Ex: 23"
                       className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
-                      required
                     />
                   </div>
 
@@ -358,8 +365,8 @@ export const PalavraPage: React.FC = () => {
                       type="text"
                       value={editVerse}
                       onChange={(e) => setEditVerse(e.target.value)}
+                      placeholder="Ex: 1-6"
                       className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
-                      required
                     />
                   </div>
                 </div>
@@ -408,7 +415,7 @@ export const PalavraPage: React.FC = () => {
               <div className="py-4 text-sm text-slate-300">
                 Tem certeza que deseja remover a referência{' '}
                 <strong className="text-amber-300">
-                  "{deletingWord.book} {deletingWord.chapter}:{deletingWord.verse}"
+                  "{[deletingWord.book, deletingWord.chapter ? `Cap. ${deletingWord.chapter}` : '', deletingWord.verse ? `Vers. ${deletingWord.verse}` : ''].filter(Boolean).join(' ') || 'Mensagem do Culto'}"
                 </strong>
                 ?
               </div>
@@ -468,7 +475,6 @@ export const PalavraPage: React.FC = () => {
                     onChange={(e) => setNewBook(e.target.value)}
                     placeholder="Ex: Salmos / João / Romanos"
                     className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
-                    required
                   />
                 </div>
 
@@ -484,7 +490,6 @@ export const PalavraPage: React.FC = () => {
                       onChange={(e) => setNewChapter(e.target.value)}
                       placeholder="Ex: 23"
                       className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
-                      required
                     />
                   </div>
 
@@ -498,7 +503,6 @@ export const PalavraPage: React.FC = () => {
                       onChange={(e) => setNewVerse(e.target.value)}
                       placeholder="Ex: 1-6"
                       className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
-                      required
                     />
                   </div>
                 </div>

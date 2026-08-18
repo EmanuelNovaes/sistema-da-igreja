@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, Music, BookOpen, Layers, Sparkles, Clock, ArrowUpRight, RefreshCw } from 'lucide-react';
+import { Calendar, Music, BookOpen, Layers, Sparkles, Clock, ArrowUpRight, RefreshCw, Mic, Youtube } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { getDashboardStats, loadSongsToday, loadWordsToday } from '../services/database';
@@ -31,6 +31,13 @@ export const DashboardPage: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const formatUrl = (url: string) => {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return `https://${url}`;
+    }
+    return url;
+  };
 
   return (
     <div className="space-y-8">
@@ -204,15 +211,38 @@ export const DashboardPage: React.FC = () => {
                 {recentSongs.map((song) => (
                   <div
                     key={song.id}
-                    className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between hover:border-[#d4af37]/40 transition-all group"
+                    className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between hover:border-[#d4af37]/40 transition-all group gap-3"
                   >
-                    <div className="overflow-hidden pr-2">
-                      <h4 className="font-semibold text-sm text-slate-100 truncate group-hover:text-[#d4af37] transition-colors">
-                        {song.songName}
-                      </h4>
-                      <p className="text-xs text-slate-400 truncate mt-0.5">
-                        Cantado por: <span className="text-slate-200">{song.personName}</span>
-                      </p>
+                    <div className="overflow-hidden pr-2 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-semibold text-sm text-slate-100 truncate group-hover:text-[#d4af37] transition-colors">
+                          {song.songName || 'Hino'}
+                        </h4>
+                        {song.youtubeUrl && (
+                          <a
+                            href={formatUrl(song.youtubeUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-400 hover:text-red-300 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20"
+                          >
+                            <Youtube className="w-3 h-3 text-red-500" />
+                            <span>YouTube</span>
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-400 truncate mt-0.5">
+                        {song.personName && (
+                          <span>
+                            Por: <span className="text-slate-200">{song.personName}</span>
+                          </span>
+                        )}
+                        {song.singer && (
+                          <span className="flex items-center gap-0.5 text-slate-300">
+                            <Mic className="w-3 h-3 text-[#d4af37]" />
+                            <span>{song.singer}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right shrink-0">
                       <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[#d4af37] bg-[#d4af37]/10 px-2 py-0.5 rounded border border-[#d4af37]/20 font-bold">
@@ -255,7 +285,7 @@ export const DashboardPage: React.FC = () => {
                   >
                     <div className="overflow-hidden pr-2">
                       <h4 className="font-bold text-sm text-[#d4af37] truncate">
-                        {word.book} {word.chapter}:{word.verse}
+                        {[word.book, word.chapter ? `Cap. ${word.chapter}` : '', word.verse ? `Vers. ${word.verse}` : ''].filter(Boolean).join(' ') || 'Mensagem do Culto'}
                       </h4>
                       <p className="text-xs text-slate-400 truncate mt-0.5">
                         Referência da Sagrada Escritura

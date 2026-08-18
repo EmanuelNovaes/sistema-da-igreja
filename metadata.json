@@ -1,6 +1,0 @@
-{
-  "name": "Comunidade Família Em Cristo",
-  "description": "Sistema de gestão e envio de hinos e leituras da Palavra para cultos da Comunidade Família Em Cristo.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

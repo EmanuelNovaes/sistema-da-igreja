@@ -1,31 +1,37 @@
 export interface Song {
   id: string;
-  personName: string;
-  songName: string;
+  personName?: string | null;
+  singer?: string | null;
+  songName?: string | null;
+  youtubeUrl?: string | null;
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
-  createdAt: string; // ISO string
+  createdAt?: string; // ISO string
+  updatedAt?: string; // ISO string
 }
 
 export interface SongInput {
-  personName: string;
-  songName: string;
+  personName?: string;
+  singer?: string;
+  songName?: string;
+  youtubeUrl?: string;
 }
 
 export interface Word {
   id: string;
-  book: string;
-  chapter: number;
-  verse: string;
+  book?: string | null;
+  chapter?: number | null;
+  verse?: string | null;
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
-  createdAt: string; // ISO string
+  createdAt?: string; // ISO string
+  updatedAt?: string; // ISO string
 }
 
 export interface WordInput {
-  book: string;
-  chapter: number;
-  verse: string;
+  book?: string;
+  chapter?: number | string;
+  verse?: string;
 }
 
 export interface HistoryEntry {

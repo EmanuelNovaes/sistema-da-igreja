@@ -18,7 +18,6 @@ export const EnviarPalavraPage: React.FC = () => {
   const [verse, setVerse] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [errors, setErrors] = useState<{ book?: string; chapter?: string; verse?: string }>({});
 
   // Filter books for dropdown suggestion
   const [filteredBooks, setFilteredBooks] = useState<string[]>([]);
@@ -26,7 +25,6 @@ export const EnviarPalavraPage: React.FC = () => {
 
   const handleBookChange = (value: string) => {
     setBook(value);
-    if (errors.book) setErrors({ ...errors, book: undefined });
 
     if (value.trim()) {
       const matches = BIBLE_BOOKS.filter((b) =>
@@ -44,39 +42,22 @@ export const EnviarPalavraPage: React.FC = () => {
     setShowBookDropdown(false);
   };
 
-  const validate = () => {
-    const newErrors: { book?: string; chapter?: string; verse?: string } = {};
-    if (!book.trim()) {
-      newErrors.book = 'Informe o livro da Bíblia.';
-    }
-    if (!chapter || Number(chapter) <= 0) {
-      newErrors.chapter = 'Informe um número de capítulo válido.';
-    }
-    if (!verse.trim()) {
-      newErrors.verse = 'Informe o versículo ou intervalo (Ex: 1-10).';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
 
     setLoading(true);
     try {
-      // Chama a função preparada para o Supabase
+      // Chama a função preparada para o Supabase com campos opcionais
       await submitWord({
-        book: book.trim(),
-        chapter: Number(chapter),
-        verse: verse.trim(),
+        book: book.trim() || undefined,
+        chapter: chapter ? Number(chapter) : undefined,
+        verse: verse.trim() || undefined,
       });
 
       // Limpa os campos
       setBook('');
       setChapter('');
       setVerse('');
-      setErrors({});
       setSuccess(true);
 
       addToast({
@@ -161,7 +142,7 @@ export const EnviarPalavraPage: React.FC = () => {
           <div className="relative">
             <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-[#d4af37]" />
-              Livro <span className="text-[#d4af37]">*</span>
+              Livro
             </label>
             <div className="relative">
               <input
@@ -172,9 +153,7 @@ export const EnviarPalavraPage: React.FC = () => {
                   if (book.trim()) setShowBookDropdown(true);
                 }}
                 placeholder="Ex: Salmos, João, Romanos, Isaías..."
-                className={`w-full px-4 py-3.5 rounded-xl bg-slate-950 border text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all ${
-                  errors.book ? 'border-rose-500/80' : 'border-slate-800'
-                }`}
+                className="w-full px-4 py-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all"
               />
               <Search className="w-4 h-4 text-slate-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -194,10 +173,6 @@ export const EnviarPalavraPage: React.FC = () => {
                 ))}
               </div>
             )}
-
-            {errors.book && (
-              <p className="text-xs text-rose-400 mt-1.5 font-medium">{errors.book}</p>
-            )}
           </div>
 
           {/* Grid Capítulo e Versículo */}
@@ -205,47 +180,31 @@ export const EnviarPalavraPage: React.FC = () => {
             {/* Capítulo */}
             <div>
               <label className="block text-sm font-bold text-slate-200 mb-2">
-                Capítulo <span className="text-[#d4af37]">*</span>
+                Capítulo
               </label>
               <input
                 type="number"
                 min="1"
                 max="150"
                 value={chapter}
-                onChange={(e) => {
-                  setChapter(e.target.value);
-                  if (errors.chapter) setErrors({ ...errors, chapter: undefined });
-                }}
+                onChange={(e) => setChapter(e.target.value)}
                 placeholder="Ex: 23"
-                className={`w-full px-4 py-3.5 rounded-xl bg-slate-950 border text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all ${
-                  errors.chapter ? 'border-rose-500/80' : 'border-slate-800'
-                }`}
+                className="w-full px-4 py-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all"
               />
-              {errors.chapter && (
-                <p className="text-xs text-rose-400 mt-1.5 font-medium">{errors.chapter}</p>
-              )}
             </div>
 
             {/* Versículo */}
             <div>
               <label className="block text-sm font-bold text-slate-200 mb-2">
-                Versículo <span className="text-[#d4af37]">*</span>
+                Versículo
               </label>
               <input
                 type="text"
                 value={verse}
-                onChange={(e) => {
-                  setVerse(e.target.value);
-                  if (errors.verse) setErrors({ ...errors, verse: undefined });
-                }}
+                onChange={(e) => setVerse(e.target.value)}
                 placeholder="Ex: 1 - 6  ou 16"
-                className={`w-full px-4 py-3.5 rounded-xl bg-slate-950 border text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all ${
-                  errors.verse ? 'border-rose-500/80' : 'border-slate-800'
-                }`}
+                className="w-full px-4 py-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all"
               />
-              {errors.verse && (
-                <p className="text-xs text-rose-400 mt-1.5 font-medium">{errors.verse}</p>
-              )}
             </div>
           </div>
 

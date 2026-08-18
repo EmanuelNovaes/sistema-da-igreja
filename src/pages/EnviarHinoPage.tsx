@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useOutletContext, useNavigate, Link } from 'react-router-dom';
-import { Music, User, Send, CheckCircle2, ArrowLeft, Church } from 'lucide-react';
+import { useOutletContext, Link } from 'react-router-dom';
+import { Music, User, Mic, Send, CheckCircle2, ArrowLeft, Church } from 'lucide-react';
 import { motion } from 'motion/react';
 import { submitSong } from '../services/database';
 import { ToastMessage } from '../components/common/Toast';
@@ -11,42 +11,29 @@ interface OutletContextType {
 
 export const EnviarHinoPage: React.FC = () => {
   const { addToast } = useOutletContext<OutletContextType>();
-  const navigate = useNavigate();
 
   const [personName, setPersonName] = useState('');
+  const [singer, setSinger] = useState('');
   const [songName, setSongName] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [errors, setErrors] = useState<{ personName?: string; songName?: string }>({});
-
-  const validate = () => {
-    const newErrors: { personName?: string; songName?: string } = {};
-    if (!personName.trim()) {
-      newErrors.personName = 'Informe o nome da pessoa ou grupo.';
-    }
-    if (!songName.trim()) {
-      newErrors.songName = 'Informe o nome do hino ou louvor.';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
 
     setLoading(true);
     try {
-      // Chama a função preparada para o Supabase
+      // Chama a função preparada para o Supabase com campos opcionais
       await submitSong({
-        personName: personName.trim(),
-        songName: songName.trim(),
+        personName: personName.trim() || undefined,
+        singer: singer.trim() || undefined,
+        songName: songName.trim() || undefined,
       });
 
       // Limpa os campos
       setPersonName('');
+      setSinger('');
       setSongName('');
-      setErrors({});
       setSuccess(true);
 
       addToast({
@@ -59,14 +46,14 @@ export const EnviarHinoPage: React.FC = () => {
         setSuccess(false);
       }, 5000);
     } catch (err: any) {
-          console.error("ERRO COMPLETO:", err);
+      console.error('ERRO COMPLETO:', err);
 
-          addToast({
-            type: 'error',
-            title: 'Erro ao Enviar',
-            description: err?.message || 'Erro desconhecido',
-          });
-        }  finally {
+      addToast({
+        type: 'error',
+        title: 'Erro ao Enviar',
+        description: err?.message || 'Erro desconhecido',
+      });
+    } finally {
       setLoading(false);
     }
   };
@@ -133,46 +120,45 @@ export const EnviarHinoPage: React.FC = () => {
           <div>
             <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
               <User className="w-4 h-4 text-[#d4af37]" />
-              Nome da Pessoa <span className="text-[#d4af37]">*</span>
+              Nome da Pessoa
             </label>
             <input
               type="text"
               value={personName}
-              onChange={(e) => {
-                setPersonName(e.target.value);
-                if (errors.personName) setErrors({ ...errors, personName: undefined });
-              }}
+              onChange={(e) => setPersonName(e.target.value)}
               placeholder="Ex: Emanuel"
-              className={`w-full px-4 py-3.5 rounded-xl bg-slate-950 border text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all ${
-                errors.personName ? 'border-rose-500/80' : 'border-slate-800'
-              }`}
+              className="w-full px-4 py-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all"
             />
-            {errors.personName && (
-              <p className="text-xs text-rose-400 mt-1.5 font-medium">{errors.personName}</p>
-            )}
+          </div>
+
+          {/* Cantor */}
+          <div>
+            <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
+              <Mic className="w-4 h-4 text-[#d4af37]" />
+              Cantor
+            </label>
+            <input
+              type="text"
+              value={singer}
+              onChange={(e) => setSinger(e.target.value)}
+              placeholder="Ex: Fernandinho / Gabriela Rocha / Grupo de Louvor"
+              className="w-full px-4 py-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all"
+            />
           </div>
 
           {/* Nome do Hino */}
           <div>
             <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
               <Music className="w-4 h-4 text-[#d4af37]" />
-              Nome do Hino <span className="text-[#d4af37]">*</span>
+              Hino
             </label>
             <input
               type="text"
               value={songName}
-              onChange={(e) => {
-                setSongName(e.target.value);
-                if (errors.songName) setErrors({ ...errors, songName: undefined });
-              }}
+              onChange={(e) => setSongName(e.target.value)}
               placeholder="Ex: Galileu"
-              className={`w-full px-4 py-3.5 rounded-xl bg-slate-950 border text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all ${
-                errors.songName ? 'border-rose-500/80' : 'border-slate-800'
-              }`}
+              className="w-full px-4 py-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all"
             />
-            {errors.songName && (
-              <p className="text-xs text-rose-400 mt-1.5 font-medium">{errors.songName}</p>
-            )}
           </div>
 
           {/* Submit Button */}

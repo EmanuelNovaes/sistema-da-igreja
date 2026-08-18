@@ -62,11 +62,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: Database,
       path: '/admin/banco-de-dados',
     },
-    {
-      label: 'Configurações',
-      icon: Settings,
-      path: '/admin/configuracoes',
-    },
   ];
 
   const sidebarContent = (

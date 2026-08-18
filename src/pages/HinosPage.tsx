@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Music, Search, Edit3, Trash2, X, Check, Clock, User, Plus } from 'lucide-react';
+import { Music, Search, Edit3, Trash2, X, Clock, User, Plus, Mic, Youtube, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { deleteSong, editSong, loadSongsToday, submitSong } from '../services/database';
-import { Song, SongInput } from '../types';
+import { Song } from '../types';
 import { formatDateBR, getCurrentDateBR } from '../utils/dateUtils';
 import { ToastMessage } from '../components/common/Toast';
 
@@ -22,14 +22,18 @@ export const HinosPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [editPersonName, setEditPersonName] = useState('');
+  const [editSinger, setEditSinger] = useState('');
   const [editSongName, setEditSongName] = useState('');
+  const [editYoutubeUrl, setEditYoutubeUrl] = useState('');
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingSong, setDeletingSong] = useState<Song | null>(null);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newPersonName, setNewPersonName] = useState('');
+  const [newSinger, setNewSinger] = useState('');
   const [newSongName, setNewSongName] = useState('');
+  const [newYoutubeUrl, setNewYoutubeUrl] = useState('');
 
   const fetchSongsData = async () => {
     setLoading(true);
@@ -53,30 +57,36 @@ export const HinosPage: React.FC = () => {
   }, []);
 
   // Filter songs by search term
-  const filteredSongs = songs.filter(
-    (s) =>
-      s.songName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.personName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.date.includes(searchTerm)
-  );
+  const filteredSongs = songs.filter((s) => {
+    const term = searchTerm.toLowerCase();
+    const songMatch = s.songName ? s.songName.toLowerCase().includes(term) : false;
+    const personMatch = s.personName ? s.personName.toLowerCase().includes(term) : false;
+    const singerMatch = s.singer ? s.singer.toLowerCase().includes(term) : false;
+    const dateMatch = s.date ? s.date.includes(term) : false;
+    return songMatch || personMatch || singerMatch || dateMatch;
+  });
 
   // Edit Handlers
   const handleOpenEdit = (song: Song) => {
     setEditingSong(song);
-    setEditPersonName(song.personName);
-    setEditSongName(song.songName);
+    setEditPersonName(song.personName || '');
+    setEditSinger(song.singer || '');
+    setEditSongName(song.songName || '');
+    setEditYoutubeUrl(song.youtubeUrl || '');
     setIsEditModalOpen(true);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingSong || !editPersonName.trim() || !editSongName.trim()) return;
+    if (!editingSong) return;
 
     try {
       // Executa a função editSong() conectada ao serviço do Supabase
       await editSong(editingSong.id, {
-        personName: editPersonName.trim(),
-        songName: editSongName.trim(),
+        personName: editPersonName.trim() || undefined,
+        singer: editSinger.trim() || undefined,
+        songName: editSongName.trim() || undefined,
+        youtubeUrl: editYoutubeUrl.trim() || undefined,
       });
 
       addToast({
@@ -131,12 +141,13 @@ export const HinosPage: React.FC = () => {
   // Quick Add Handler from Admin
   const handleAddSong = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPersonName.trim() || !newSongName.trim()) return;
 
     try {
       await submitSong({
-        personName: newPersonName.trim(),
-        songName: newSongName.trim(),
+        personName: newPersonName.trim() || undefined,
+        singer: newSinger.trim() || undefined,
+        songName: newSongName.trim() || undefined,
+        youtubeUrl: newYoutubeUrl.trim() || undefined,
       });
 
       addToast({
@@ -147,7 +158,9 @@ export const HinosPage: React.FC = () => {
 
       setIsAddModalOpen(false);
       setNewPersonName('');
+      setNewSinger('');
       setNewSongName('');
+      setNewYoutubeUrl('');
       fetchSongsData();
     } catch (err) {
       addToast({
@@ -156,6 +169,13 @@ export const HinosPage: React.FC = () => {
         description: 'Não foi possível adicionar o hino.',
       });
     }
+  };
+
+  const formatUrl = (url: string) => {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return `https://${url}`;
+    }
+    return url;
   };
 
   return (
@@ -189,7 +209,7 @@ export const HinosPage: React.FC = () => {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Pesquisar por nome ou hino do culto de hoje..."
+          placeholder="Pesquisar por nome, cantor ou hino de hoje..."
           className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all"
         />
         <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -211,7 +231,9 @@ export const HinosPage: React.FC = () => {
             <thead>
               <tr className="bg-slate-950/90 text-[#d4af37] border-b border-slate-800 text-[10px] uppercase tracking-widest font-extrabold">
                 <th className="py-4 px-6">Nome da Pessoa</th>
+                <th className="py-4 px-6">Cantor</th>
                 <th className="py-4 px-6">Hino / Louvor</th>
+                <th className="py-4 px-6">Link do YouTube</th>
                 <th className="py-4 px-6">Data</th>
                 <th className="py-4 px-6">Hora</th>
                 <th className="py-4 px-6 text-right">Ações</th>
@@ -220,7 +242,7 @@ export const HinosPage: React.FC = () => {
             <tbody className="divide-y divide-slate-800/60 text-sm text-slate-300">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-500">
+                  <td colSpan={7} className="py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <div className="w-6 h-6 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin"></div>
                       <span>Carregando hinos de hoje...</span>
@@ -229,7 +251,7 @@ export const HinosPage: React.FC = () => {
                 </tr>
               ) : filteredSongs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400 text-sm">
+                  <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">
                     {searchTerm ? (
                       'Nenhum hino encontrado com o termo pesquisado na programação de hoje.'
                     ) : (
@@ -248,10 +270,48 @@ export const HinosPage: React.FC = () => {
                   >
                     <td className="py-4 px-6 font-semibold text-slate-100 flex items-center gap-2">
                       <User className="w-4 h-4 text-[#d4af37] shrink-0" />
-                      <span>{song.personName}</span>
+                      <span>{song.personName || <span className="text-slate-500 font-normal italic">—</span>}</span>
+                    </td>
+                    <td className="py-4 px-6 text-slate-300 font-medium">
+                      {song.singer ? (
+                        <span className="inline-flex items-center gap-1.5 text-slate-200">
+                          <Mic className="w-3.5 h-3.5 text-[#d4af37] shrink-0" />
+                          {song.singer}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 font-normal italic">—</span>
+                      )}
                     </td>
                     <td className="py-4 px-6 font-medium text-slate-200 group-hover:text-[#d4af37] transition-colors">
-                      {song.songName}
+                      {song.youtubeUrl ? (
+                        <a
+                          href={formatUrl(song.youtubeUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-[#d4af37] hover:underline font-semibold"
+                          title="Abrir no YouTube"
+                        >
+                          <span>{song.songName || 'Ouvir Louvor'}</span>
+                          <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                        </a>
+                      ) : (
+                        <span>{song.songName || <span className="text-slate-500 font-normal italic">—</span>}</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-6 text-xs">
+                      {song.youtubeUrl ? (
+                        <a
+                          href={formatUrl(song.youtubeUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30 transition-colors font-semibold"
+                        >
+                          <Youtube className="w-3.5 h-3.5 text-red-500" />
+                          <span>YouTube</span>
+                        </a>
+                      ) : (
+                        <span className="text-slate-600 font-normal italic">—</span>
+                      )}
                     </td>
                     <td className="py-4 px-6 font-mono text-slate-400 text-xs">
                       {formatDateBR(song.date)}
@@ -311,28 +371,58 @@ export const HinosPage: React.FC = () => {
 
               <form onSubmit={handleSaveEdit} className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-[#d4af37]" />
                     Nome da Pessoa
                   </label>
                   <input
                     type="text"
                     value={editPersonName}
                     onChange={(e) => setEditPersonName(e.target.value)}
+                    placeholder="Ex: Emanuel"
                     className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
-                    required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center gap-1.5">
+                    <Mic className="w-3.5 h-3.5 text-[#d4af37]" />
+                    Cantor
+                  </label>
+                  <input
+                    type="text"
+                    value={editSinger}
+                    onChange={(e) => setEditSinger(e.target.value)}
+                    placeholder="Ex: Fernandinho"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center gap-1.5">
+                    <Music className="w-3.5 h-3.5 text-[#d4af37]" />
                     Nome do Hino
                   </label>
                   <input
                     type="text"
                     value={editSongName}
                     onChange={(e) => setEditSongName(e.target.value)}
+                    placeholder="Ex: Galileu"
                     className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
-                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center gap-1.5">
+                    <Youtube className="w-3.5 h-3.5 text-red-500" />
+                    Link do YouTube
+                  </label>
+                  <input
+                    type="url"
+                    value={editYoutubeUrl}
+                    onChange={(e) => setEditYoutubeUrl(e.target.value)}
+                    placeholder="Ex: https://www.youtube.com/watch?v=..."
+                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
                   />
                 </div>
 
@@ -379,8 +469,13 @@ export const HinosPage: React.FC = () => {
 
               <div className="py-4 text-sm text-slate-300">
                 Tem certeza que deseja remover o hino{' '}
-                <strong className="text-amber-300">"{deletingSong.songName}"</strong> cadastrado por{' '}
-                <strong className="text-white">{deletingSong.personName}</strong>?
+                <strong className="text-amber-300">"{deletingSong.songName || 'sem título'}"</strong>
+                {deletingSong.personName && (
+                  <>
+                    {' '}cadastrado por <strong className="text-white">{deletingSong.personName}</strong>
+                  </>
+                )}
+                ?
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
@@ -429,7 +524,8 @@ export const HinosPage: React.FC = () => {
 
               <form onSubmit={handleAddSong} className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-[#d4af37]" />
                     Nome da Pessoa
                   </label>
                   <input
@@ -438,12 +534,26 @@ export const HinosPage: React.FC = () => {
                     onChange={(e) => setNewPersonName(e.target.value)}
                     placeholder="Ex: Irmã Maria / Grupo de Louvor"
                     className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
-                    required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center gap-1.5">
+                    <Mic className="w-3.5 h-3.5 text-[#d4af37]" />
+                    Cantor
+                  </label>
+                  <input
+                    type="text"
+                    value={newSinger}
+                    onChange={(e) => setNewSinger(e.target.value)}
+                    placeholder="Ex: Fernandinho / Gabriela Rocha"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center gap-1.5">
+                    <Music className="w-3.5 h-3.5 text-[#d4af37]" />
                     Nome do Hino
                   </label>
                   <input
@@ -452,7 +562,20 @@ export const HinosPage: React.FC = () => {
                     onChange={(e) => setNewSongName(e.target.value)}
                     placeholder="Ex: Quão Grande És Tu"
                     className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
-                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center gap-1.5">
+                    <Youtube className="w-3.5 h-3.5 text-red-500" />
+                    Link do YouTube
+                  </label>
+                  <input
+                    type="url"
+                    value={newYoutubeUrl}
+                    onChange={(e) => setNewYoutubeUrl(e.target.value)}
+                    placeholder="Ex: https://www.youtube.com/watch?v=..."
+                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
                   />
                 </div>
 

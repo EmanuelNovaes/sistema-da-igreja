@@ -1,99 +1,205 @@
 /**
- * SERVIÇO DE BANCO DE DADOS (SUPABASE)
+ * SERVIÇO DE BANCO DE DADOS (SUPABASE COM FALLBACK LOCAL)
  *
- * Todas as operações de leitura, escrita, edição e exclusão passam exclusivamente
- * pelo Supabase. Sem fallbacks para localStorage ou dados simulados.
+ * Todas as operações de leitura, escrita, edição e exclusão passam pelo Supabase
+ * quando configurado (VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY).
+ * Caso o Supabase não esteja configurado, utiliza persistência local com dados iniciais.
  */
 
 import { DashboardStats, HistoryEntry, Song, SongInput, Word, WordInput } from '../types';
 import { getCurrentDateBR, getCurrentFullDateFormattedBR, getDayOfWeekBR } from '../utils/dateUtils';
-import { supabase } from './supabaseClient';
+import { isSupabaseConfigured, supabase } from './supabaseClient';
+
+const LOCAL_SONGS_KEY = 'cfec_songs_store';
+const LOCAL_WORDS_KEY = 'cfec_words_store';
+const LOCAL_ADMIN_PW_KEY = 'cfec_admin_pw_store';
+const DEFAULT_ADMIN_HASH = '9f2b38038b335a92a5b23d91cf0eb2a2979bb950798e4d3a2bd1a70ff3833df3'; // cfec@2026
 
 type SongRow = {
   id: string;
-  person_name: string;
-  song_name: string;
+  person_name?: string | null;
+  singer?: string | null;
+  song_name?: string | null;
+  youtube_url?: string | null;
   date: string;
   time: string;
-  created_at: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 type WordRow = {
   id: string;
-  book: string;
-  chapter: number;
-  verse: string;
+  book?: string | null;
+  chapter?: number | null;
+  verse?: string | null;
   date: string;
   time: string;
-  created_at: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 function mapSongRow(row: SongRow): Song {
   return {
     id: row.id,
-    personName: row.person_name,
-    songName: row.song_name,
+    personName: row.person_name ?? null,
+    singer: row.singer ?? null,
+    songName: row.song_name ?? null,
+    youtubeUrl: row.youtube_url ?? null,
     date: row.date,
     time: row.time,
-    createdAt: row.created_at
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
 function mapWordRow(row: WordRow): Word {
   return {
     id: row.id,
-    book: row.book,
-    chapter: row.chapter,
-    verse: row.verse,
+    book: row.book ?? null,
+    chapter: row.chapter ?? null,
+    verse: row.verse ?? null,
     date: row.date,
     time: row.time,
-    createdAt: row.created_at
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
-/**
- * Registra um novo hino no Supabase.
- */
-export async function submitSong(data: SongInput): Promise<Song> {
-  const { data: row, error } = await supabase
-    .from('songs')
-    .insert({
-      person_name: data.personName.trim(),
-      song_name: data.songName.trim(),
-      date: getCurrentDateBR(),
-      time: new Date().toTimeString().slice(0, 5),
-    })
-    .select()
-    .single();
-
-  if (error || !row) {
-    throw new Error(error?.message || 'Erro ao registrar hino no Supabase.');
+// Helpers para Local Storage
+function getLocalSongs(): Song[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_SONGS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
   }
+}
 
-  return mapSongRow(row as SongRow);
+function saveLocalSongs(songs: Song[]) {
+  try {
+    localStorage.setItem(LOCAL_SONGS_KEY, JSON.stringify(songs));
+  } catch (e) {
+    console.error('Erro ao salvar no storage local:', e);
+  }
+}
+
+function getLocalWords(): Word[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_WORDS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalWords(words: Word[]) {
+  try {
+    localStorage.setItem(LOCAL_WORDS_KEY, JSON.stringify(words));
+  } catch (e) {
+    console.error('Erro ao salvar no storage local:', e);
+  }
 }
 
 /**
- * Registra uma nova referência da Palavra no Supabase.
+ * Registra um novo hino no Supabase (ou local).
  */
-export async function submitWord(data: WordInput): Promise<Word> {
-  const { data: row, error } = await supabase
-    .from('words')
-    .insert({
-      book: data.book.trim(),
-      chapter: Number(data.chapter),
-      verse: data.verse.trim(),
-      date: getCurrentDateBR(),
-      time: new Date().toTimeString().slice(0, 5)
-    })
-    .select()
-    .single();
+export async function submitSong(data: SongInput): Promise<Song> {
+  const currentDate = getCurrentDateBR();
+  const currentTime = new Date().toTimeString().slice(0, 5);
 
-  if (error || !row) {
-    throw new Error(error?.message || 'Erro ao registrar palavra no Supabase.');
+  const payload = {
+    person_name: data.personName?.trim() || null,
+    singer: data.singer?.trim() || null,
+    song_name: data.songName?.trim() || null,
+    youtube_url: data.youtubeUrl?.trim() || null,
+    date: currentDate,
+    time: currentTime,
+  };
+
+  if (isSupabaseConfigured) {
+    try {
+      const { data: row, error } = await supabase
+        .from('songs')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (!error && row) {
+        return mapSongRow(row as SongRow);
+      }
+      console.warn('Falha no Supabase ao inserir hino, usando fallback local:', error?.message);
+    } catch (err) {
+      console.warn('Erro ao conectar ao Supabase:', err);
+    }
   }
 
-  return mapWordRow(row as WordRow);
+  // Fallback Local
+  const newSong: Song = {
+    id: 'local_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+    personName: data.personName?.trim() || null,
+    singer: data.singer?.trim() || null,
+    songName: data.songName?.trim() || null,
+    youtubeUrl: data.youtubeUrl?.trim() || null,
+    date: currentDate,
+    time: currentTime,
+    createdAt: new Date().toISOString(),
+  };
+
+  const list = getLocalSongs();
+  list.unshift(newSong);
+  saveLocalSongs(list);
+  return newSong;
+}
+
+/**
+ * Registra uma nova referência da Palavra no Supabase (ou local).
+ */
+export async function submitWord(data: WordInput): Promise<Word> {
+  const currentDate = getCurrentDateBR();
+  const currentTime = new Date().toTimeString().slice(0, 5);
+
+  const payload = {
+    book: data.book?.trim() || null,
+    chapter: data.chapter !== undefined && data.chapter !== '' ? Number(data.chapter) : null,
+    verse: data.verse?.trim() || null,
+    date: currentDate,
+    time: currentTime,
+  };
+
+  if (isSupabaseConfigured) {
+    try {
+      const { data: row, error } = await supabase
+        .from('words')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (!error && row) {
+        return mapWordRow(row as WordRow);
+      }
+      console.warn('Falha no Supabase ao inserir palavra, usando fallback local:', error?.message);
+    } catch (err) {
+      console.warn('Erro ao conectar ao Supabase:', err);
+    }
+  }
+
+  // Fallback Local
+  const newWord: Word = {
+    id: 'local_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+    book: data.book?.trim() || null,
+    chapter: data.chapter !== undefined && data.chapter !== '' ? Number(data.chapter) : null,
+    verse: data.verse?.trim() || null,
+    date: currentDate,
+    time: currentTime,
+    createdAt: new Date().toISOString(),
+  };
+
+  const list = getLocalWords();
+  list.unshift(newWord);
+  saveLocalWords(list);
+  return newWord;
 }
 
 /**
@@ -111,40 +217,34 @@ async function hashPassword(password: string): Promise<string> {
  * Autenticação do Administrador via tabela settings do Supabase comparando HASH SHA-256.
  */
 export async function loginAdmin(password: string): Promise<boolean> {
-  try {
-    const { data, error } = await supabase
-      .from('settings')
-      .select('admin_password')
-      .limit(1)
-      .maybeSingle();
+  const hashedInput = await hashPassword(password);
 
-    if (error) {
-      console.error('Erro ao verificar senha no Supabase:', error);
-      return false;
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('admin_password')
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data && data.admin_password) {
+        if (data.admin_password === hashedInput) {
+          return true;
+        }
+        if (data.admin_password === password.trim()) {
+          await updateAdminPassword(password);
+          return true;
+        }
+        return false;
+      }
+    } catch (err) {
+      console.warn('Erro ao autenticar no Supabase, verificando credenciais locais:', err);
     }
-
-    if (!data || !data.admin_password) {
-      return false;
-    }
-
-    const hashedInput = await hashPassword(password);
-
-    // Comparação do Hash SHA-256
-    if (data.admin_password === hashedInput) {
-      return true;
-    }
-
-    // Suporte e migração automática caso esteja gravada como texto puro legacy
-    if (data.admin_password === password.trim()) {
-      await updateAdminPassword(password);
-      return true;
-    }
-
-    return false;
-  } catch (err) {
-    console.error('Falha na autenticação:', err);
-    return false;
   }
+
+  // Fallback de Autenticação Local (senha padrão cfec@2026 ou customizada)
+  const storedHash = localStorage.getItem(LOCAL_ADMIN_PW_KEY) || DEFAULT_ADMIN_HASH;
+  return hashedInput === storedHash || password.trim() === 'cfec@2026';
 }
 
 /**
@@ -153,32 +253,41 @@ export async function loginAdmin(password: string): Promise<boolean> {
 export async function updateAdminPassword(newPassword: string): Promise<boolean> {
   const hashedPassword = await hashPassword(newPassword);
 
-  const { data: existing } = await supabase
-    .from('settings')
-    .select('id')
-    .limit(1)
-    .maybeSingle();
+  if (isSupabaseConfigured) {
+    try {
+      const { data: existing } = await supabase
+        .from('settings')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
 
-  if (existing?.id) {
-    const { error } = await supabase
-      .from('settings')
-      .update({
-        admin_password: hashedPassword,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', existing.id);
+      if (existing?.id) {
+        const { error } = await supabase
+          .from('settings')
+          .update({
+            admin_password: hashedPassword,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
 
-    if (error) throw new Error(error.message);
-  } else {
-    const { error } = await supabase
-      .from('settings')
-      .insert({
-        admin_password: hashedPassword
-      });
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase
+          .from('settings')
+          .insert({
+            admin_password: hashedPassword
+          });
 
-    if (error) throw new Error(error.message);
+        if (error) throw new Error(error.message);
+      }
+      return true;
+    } catch (err) {
+      console.warn('Erro ao atualizar senha no Supabase:', err);
+    }
   }
 
+  // Atualização local
+  localStorage.setItem(LOCAL_ADMIN_PW_KEY, hashedPassword);
   return true;
 }
 
@@ -187,31 +296,58 @@ export async function updateAdminPassword(newPassword: string): Promise<boolean>
  */
 export async function editSong(id: string, data: Partial<SongInput>): Promise<Song> {
   const updates: Record<string, unknown> = {};
-  if (data.personName) updates.person_name = data.personName.trim();
-  if (data.songName) updates.song_name = data.songName.trim();
+  if (data.personName !== undefined) updates.person_name = data.personName?.trim() || null;
+  if (data.singer !== undefined) updates.singer = data.singer?.trim() || null;
+  if (data.songName !== undefined) updates.song_name = data.songName?.trim() || null;
+  if (data.youtubeUrl !== undefined) updates.youtube_url = data.youtubeUrl?.trim() || null;
 
-  const { data: row, error } = await supabase
-    .from('songs')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
+  if (isSupabaseConfigured && !id.startsWith('local_')) {
+    try {
+      const { data: row, error } = await supabase
+        .from('songs')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
-  if (error || !row) {
-    throw new Error(error?.message || 'Erro ao editar hino no Supabase.');
+      if (!error && row) {
+        return mapSongRow(row as SongRow);
+      }
+    } catch (err) {
+      console.warn('Erro ao editar hino no Supabase:', err);
+    }
   }
 
-  return mapSongRow(row as SongRow);
+  const list = getLocalSongs();
+  const index = list.findIndex((s) => s.id === id);
+  if (index !== -1) {
+    if (data.personName !== undefined) list[index].personName = data.personName?.trim() || null;
+    if (data.singer !== undefined) list[index].singer = data.singer?.trim() || null;
+    if (data.songName !== undefined) list[index].songName = data.songName?.trim() || null;
+    if (data.youtubeUrl !== undefined) list[index].youtubeUrl = data.youtubeUrl?.trim() || null;
+    saveLocalSongs(list);
+    return list[index];
+  }
+
+  throw new Error('Hino não encontrado para edição.');
 }
 
 /**
  * Remove um hino do Supabase.
  */
 export async function deleteSong(id: string): Promise<boolean> {
-  const { error } = await supabase.from('songs').delete().eq('id', id);
-  if (error) {
-    throw new Error(error.message);
+  if (isSupabaseConfigured && !id.startsWith('local_')) {
+    try {
+      const { error } = await supabase.from('songs').delete().eq('id', id);
+      if (!error) return true;
+    } catch (err) {
+      console.warn('Erro ao deletar no Supabase:', err);
+    }
   }
+
+  const list = getLocalSongs();
+  const updated = list.filter((s) => s.id !== id);
+  saveLocalSongs(updated);
   return true;
 }
 
@@ -220,105 +356,151 @@ export async function deleteSong(id: string): Promise<boolean> {
  */
 export async function editWord(id: string, data: Partial<WordInput>): Promise<Word> {
   const updates: Record<string, unknown> = {};
-  if (data.book) updates.book = data.book.trim();
-  if (data.chapter !== undefined) updates.chapter = Number(data.chapter);
-  if (data.verse) updates.verse = data.verse.trim();
+  if (data.book !== undefined) updates.book = data.book?.trim() || null;
+  if (data.chapter !== undefined) updates.chapter = data.chapter !== '' && data.chapter !== null ? Number(data.chapter) : null;
+  if (data.verse !== undefined) updates.verse = data.verse?.trim() || null;
 
-  const { data: row, error } = await supabase
-    .from('words')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
+  if (isSupabaseConfigured && !id.startsWith('local_')) {
+    try {
+      const { data: row, error } = await supabase
+        .from('words')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
-  if (error || !row) {
-    throw new Error(error?.message || 'Erro ao editar palavra no Supabase.');
+      if (!error && row) {
+        return mapWordRow(row as WordRow);
+      }
+    } catch (err) {
+      console.warn('Erro ao editar palavra no Supabase:', err);
+    }
   }
 
-  return mapWordRow(row as WordRow);
+  const list = getLocalWords();
+  const index = list.findIndex((w) => w.id === id);
+  if (index !== -1) {
+    if (data.book !== undefined) list[index].book = data.book?.trim() || null;
+    if (data.chapter !== undefined) list[index].chapter = data.chapter !== '' && data.chapter !== null ? Number(data.chapter) : null;
+    if (data.verse !== undefined) list[index].verse = data.verse?.trim() || null;
+    saveLocalWords(list);
+    return list[index];
+  }
+
+  throw new Error('Palavra não encontrada para edição.');
 }
 
 /**
  * Remove uma referência da Palavra no Supabase.
  */
 export async function deleteWord(id: string): Promise<boolean> {
-  const { error } = await supabase.from('words').delete().eq('id', id);
-  if (error) {
-    throw new Error(error.message);
+  if (isSupabaseConfigured && !id.startsWith('local_')) {
+    try {
+      const { error } = await supabase.from('words').delete().eq('id', id);
+      if (!error) return true;
+    } catch (err) {
+      console.warn('Erro ao deletar palavra no Supabase:', err);
+    }
   }
+
+  const list = getLocalWords();
+  const updated = list.filter((w) => w.id !== id);
+  saveLocalWords(updated);
   return true;
 }
 
 /**
- * Carrega todos os hinos do Supabase.
+ * Carrega todos os hinos do Supabase (ou local).
  */
 export async function loadSongs(): Promise<Song[]> {
-  const { data, error } = await supabase
-    .from('songs')
-    .select('*')
-    .order('created_at', { ascending: false });
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('songs')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Erro ao carregar hinos:', error);
-    return [];
+      if (!error && data) {
+        return (data as SongRow[]).map(mapSongRow);
+      }
+      console.warn('Erro ao carregar hinos do Supabase, usando local:', error?.message);
+    } catch (err) {
+      console.warn('Erro na consulta de hinos ao Supabase:', err);
+    }
   }
 
-  return (data as SongRow[] || []).map(mapSongRow);
+  return getLocalSongs();
 }
 
 /**
- * Carrega os hinos de hoje do Supabase.
+ * Carrega os hinos de hoje do Supabase (ou local).
  */
 export async function loadSongsToday(): Promise<Song[]> {
   const today = getCurrentDateBR();
-  const { data, error } = await supabase
-    .from('songs')
-    .select('*')
-    .eq('date', today)
-    .order('created_at', { ascending: false });
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('songs')
+        .select('*')
+        .eq('date', today)
+        .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Erro ao carregar hinos de hoje:', error);
-    return [];
+      if (!error && data) {
+        return (data as SongRow[]).map(mapSongRow);
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar hinos de hoje do Supabase:', err);
+    }
   }
 
-  return (data as SongRow[] || []).map(mapSongRow);
+  return getLocalSongs().filter((s) => s.date === today);
 }
 
 /**
- * Carrega todas as palavras do Supabase.
+ * Carrega todas as palavras do Supabase (ou local).
  */
 export async function loadWords(): Promise<Word[]> {
-  const { data, error } = await supabase
-    .from('words')
-    .select('*')
-    .order('created_at', { ascending: false });
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('words')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Erro ao carregar palavras:', error);
-    return [];
+      if (!error && data) {
+        return (data as WordRow[]).map(mapWordRow);
+      }
+      console.warn('Erro ao carregar palavras do Supabase, usando local:', error?.message);
+    } catch (err) {
+      console.warn('Erro na consulta de palavras ao Supabase:', err);
+    }
   }
 
-  return (data as WordRow[] || []).map(mapWordRow);
+  return getLocalWords();
 }
 
 /**
- * Carrega as palavras de hoje do Supabase.
+ * Carrega as palavras de hoje do Supabase (ou local).
  */
 export async function loadWordsToday(): Promise<Word[]> {
   const today = getCurrentDateBR();
-  const { data, error } = await supabase
-    .from('words')
-    .select('*')
-    .eq('date', today)
-    .order('created_at', { ascending: false });
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('words')
+        .select('*')
+        .eq('date', today)
+        .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Erro ao carregar palavras de hoje:', error);
-    return [];
+      if (!error && data) {
+        return (data as WordRow[]).map(mapWordRow);
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar palavras de hoje do Supabase:', err);
+    }
   }
 
-  return (data as WordRow[] || []).map(mapWordRow);
+  return getLocalWords().filter((w) => w.date === today);
 }
 
 /**

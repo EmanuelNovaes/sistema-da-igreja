@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, Music, BookOpen, ChevronDown, ChevronUp, Clock, User, Sparkles, Filter } from 'lucide-react';
+import { Calendar, Music, BookOpen, ChevronDown, ChevronUp, Clock, User, Sparkles, Filter, Mic, Youtube, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { loadHistory } from '../services/database';
 import { HistoryEntry } from '../types';
@@ -44,13 +44,26 @@ export const HistoricoPage: React.FC = () => {
     const query = filterQuery.toLowerCase();
     const matchesDate = item.formattedDate.toLowerCase().includes(query) || item.date.includes(query);
     const matchesSongs = item.songs.some(
-      (s) => s.songName.toLowerCase().includes(query) || s.personName.toLowerCase().includes(query)
+      (s) =>
+        (s.songName && s.songName.toLowerCase().includes(query)) ||
+        (s.personName && s.personName.toLowerCase().includes(query)) ||
+        (s.singer && s.singer.toLowerCase().includes(query))
     );
     const matchesWords = item.words.some(
-      (w) => w.book.toLowerCase().includes(query) || String(w.chapter).includes(query) || w.verse.includes(query)
+      (w) =>
+        (w.book && w.book.toLowerCase().includes(query)) ||
+        (w.chapter !== null && w.chapter !== undefined && String(w.chapter).includes(query)) ||
+        (w.verse && w.verse.includes(query))
     );
     return matchesDate || matchesSongs || matchesWords;
   });
+
+  const formatUrl = (url: string) => {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return `https://${url}`;
+    }
+    return url;
+  };
 
   return (
     <div className="space-y-6">
@@ -75,7 +88,7 @@ export const HistoricoPage: React.FC = () => {
           type="text"
           value={filterQuery}
           onChange={(e) => setFilterQuery(e.target.value)}
-          placeholder="Filtrar por data, hino, pessoa ou versículo..."
+          placeholder="Filtrar por data, hino, cantor, pessoa ou versículo..."
           className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all"
         />
         <Filter className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -160,14 +173,40 @@ export const HistoricoPage: React.FC = () => {
                             {entry.songs.map((song) => (
                               <div
                                 key={song.id}
-                                className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between"
+                                className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-3"
                               >
-                                <div>
-                                  <h5 className="font-bold text-sm text-slate-100">{song.songName}</h5>
-                                  <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                                    <User className="w-3 h-3 text-[#d4af37]" />
-                                    <span>{song.personName}</span>
-                                  </p>
+                                <div className="space-y-1 min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h5 className="font-bold text-sm text-slate-100 truncate">
+                                      {song.songName || 'Hino'}
+                                    </h5>
+                                    {song.youtubeUrl && (
+                                      <a
+                                        href={formatUrl(song.youtubeUrl)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-2 py-0.5 rounded border border-red-500/20 transition-colors"
+                                      >
+                                        <Youtube className="w-3 h-3 text-red-500" />
+                                        <span>Assistir</span>
+                                        <ExternalLink className="w-2.5 h-2.5" />
+                                      </a>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
+                                    {song.personName && (
+                                      <span className="flex items-center gap-1">
+                                        <User className="w-3 h-3 text-[#d4af37]" />
+                                        <span>{song.personName}</span>
+                                      </span>
+                                    )}
+                                    {song.singer && (
+                                      <span className="flex items-center gap-1 text-slate-300">
+                                        <Mic className="w-3 h-3 text-[#d4af37]" />
+                                        <span>{song.singer}</span>
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                                 <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[#d4af37] bg-[#d4af37]/10 px-2 py-0.5 rounded border border-[#d4af37]/20 font-bold shrink-0">
                                   <Clock className="w-3 h-3" />
@@ -197,7 +236,7 @@ export const HistoricoPage: React.FC = () => {
                               >
                                 <div>
                                   <h5 className="font-black text-sm text-[#d4af37]">
-                                    {word.book} {word.chapter}:{word.verse}
+                                    {[word.book, word.chapter ? `Cap. ${word.chapter}` : '', word.verse ? `Vers. ${word.verse}` : ''].filter(Boolean).join(' ') || 'Mensagem do Culto'}
                                   </h5>
                                   <p className="text-xs text-slate-400 mt-0.5">
                                     Mensagem do Culto
