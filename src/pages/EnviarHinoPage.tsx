@@ -141,7 +141,7 @@ export const EnviarHinoPage: React.FC = () => {
               type="text"
               value={singer}
               onChange={(e) => setSinger(e.target.value)}
-              placeholder="Ex: Fernandinho / Gabriela Rocha / Grupo de Louvor"
+              placeholder="Ex: Fernandinho / Voz da Verdade / Gerson Rufino"
               className="w-full px-4 py-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all"
             />
           </div>
@@ -156,7 +156,7 @@ export const EnviarHinoPage: React.FC = () => {
               type="text"
               value={songName}
               onChange={(e) => setSongName(e.target.value)}
-              placeholder="Ex: Galileu"
+              placeholder="Ex: Galileu / Quem sou eu / Reconstrução"
               className="w-full px-4 py-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all"
             />
           </div>

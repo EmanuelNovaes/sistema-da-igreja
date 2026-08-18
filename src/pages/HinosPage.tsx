@@ -379,7 +379,7 @@ export const HinosPage: React.FC = () => {
                     type="text"
                     value={editPersonName}
                     onChange={(e) => setEditPersonName(e.target.value)}
-                    placeholder="Ex: Emanuel"
+                    placeholder="Ex: Emanuel / Ednaldo / Wrylya"
                     className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
                   />
                 </div>
@@ -393,7 +393,7 @@ export const HinosPage: React.FC = () => {
                     type="text"
                     value={editSinger}
                     onChange={(e) => setEditSinger(e.target.value)}
-                    placeholder="Ex: Fernandinho"
+                    placeholder="Ex: Fernandinho / Voz da Verdade / Gerson Rufino"
                     className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
                   />
                 </div>
@@ -407,7 +407,7 @@ export const HinosPage: React.FC = () => {
                     type="text"
                     value={editSongName}
                     onChange={(e) => setEditSongName(e.target.value)}
-                    placeholder="Ex: Galileu"
+                    placeholder="Ex: Galileu / Quem sou eu / Reconstrução"
                     className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
                   />
                 </div>
@@ -546,7 +546,7 @@ export const HinosPage: React.FC = () => {
                     type="text"
                     value={newSinger}
                     onChange={(e) => setNewSinger(e.target.value)}
-                    placeholder="Ex: Fernandinho / Gabriela Rocha"
+                    placeholder="Ex: Fernandinho / Voz da Verdade / Gerson Rufino"
                     className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-amber-500"
                   />
                 </div>
