@@ -135,7 +135,7 @@ export const EnviarHinoPage: React.FC = () => {
           <div>
             <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
               <Mic className="w-4 h-4 text-[#d4af37]" />
-              Cantor / Banda
+              Cantor / Banda (Se não souber, não precisa colocar)
             </label>
             <input
               type="text"

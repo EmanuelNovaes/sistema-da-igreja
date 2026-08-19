@@ -387,7 +387,7 @@ export const HinosPage: React.FC = () => {
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center gap-1.5">
                     <Mic className="w-3.5 h-3.5 text-[#d4af37]" />
-                    Cantor / Banda
+                    Cantor / Banda (Se não souber, não precisa colocar)
                   </label>
                   <input
                     type="text"
