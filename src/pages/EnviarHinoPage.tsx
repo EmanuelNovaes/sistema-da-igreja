@@ -120,7 +120,7 @@ export const EnviarHinoPage: React.FC = () => {
           <div>
             <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
               <User className="w-4 h-4 text-[#d4af37]" />
-              Nome da Pessoa
+              Seu nome 
             </label>
             <input
               type="text"
@@ -135,7 +135,7 @@ export const EnviarHinoPage: React.FC = () => {
           <div>
             <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
               <Mic className="w-4 h-4 text-[#d4af37]" />
-              Cantor
+              Cantor / Banda
             </label>
             <input
               type="text"
