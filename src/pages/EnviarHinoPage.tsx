@@ -126,7 +126,7 @@ export const EnviarHinoPage: React.FC = () => {
               type="text"
               value={personName}
               onChange={(e) => setPersonName(e.target.value)}
-              placeholder="Ex: Emanuel"
+              placeholder="Ex: Emanuel / Ednaldo / Wrylya"
               className="w-full px-4 py-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all"
             />
           </div>
